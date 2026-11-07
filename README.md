@@ -49,8 +49,17 @@ python linear_probe.py --mode real --layer 8 --zscore
 Options: `--layer` (0 = embeddings … 12), `--zscore`, `--human-file`, `--ai-file`, `--model`,
 `--max-len`, `--batch-size`, `--seed`, `--outdir` (where the PNGs are written).
 
-Outputs (PNG): PCA scatter with the direction `d` as an arrow, histograms of `s` with a dashed line
-at `τ`, ROC curve with AUC, and test AUC vs. layer with and without z-scoring.
+Outputs (written to `figures/`):
+
+* `pipeline_<mode>.png` / `.pdf` (300 dpi): the pipeline diagram, with the hidden-representation box
+  showing the *actual* 2-D PCA projection of the hidden states (30 points per class) and `d` as an arrow.
+  Labelled "simulated data" in synthetic mode.
+* `results_<mode>.png`: one 2x2 figure with the PCA scatter (arrow = `d`), histograms of `s` with a dashed
+  line at `τ`, the ROC curve with AUC, and test AUC vs. layer with and without z-scoring.
+* `--separate-figs` additionally saves each of the four results plots as its own PNG.
+
+`figures/pipeline_synthetic.*` and `figures/results_synthetic.png` were generated with
+`python linear_probe.py --zscore`.
 
 ## Synthetic vs. real mode
 
@@ -77,7 +86,8 @@ linear_probe.py            single-file Python implementation (synthetic + real m
 human_texts.txt            sample human-written texts (placeholder)
 ai_texts.txt               sample AI-style texts (placeholder)
 requirements.txt
-figures/                   figures from SIMULATED data (raw and z-scored)
+figures/                   pipeline_synthetic.{png,pdf}, results_synthetic.png and older single plots
+                           (all from SIMULATED data)
 matlab_version/            earlier version
     linear_probe_ai_detection.m   MATLAB probe (needs Statistics and Machine Learning Toolbox)
     extract_hidden_states.py      saves hidden_states.mat for the MATLAB script
