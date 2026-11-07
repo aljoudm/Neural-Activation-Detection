@@ -96,8 +96,10 @@ matlab_version/            earlier version
 ## Status / caveats
 
 * Synthetic mode has been run end to end and its figures inspected.
-* Real mode (GPT-2 extraction in `linear_probe.py`) follows the same pipeline but had **not been
-  verified end to end** when this README was written.
+* Real mode was smoke-tested end to end (GPT-2 via `transformers`, CPU) on the 30 tiny placeholder
+  sentences in this repo: it loads the model, caches all 13 layers, and produces the pipeline and
+  results figures. The near-perfect scores on that toy sample are **not** a meaningful result (30 texts,
+  hand-written, very different topics and style); no real-data results are included in this repo.
 * Confounds such as text length, topic and domain can leak into a probe; control for them.
 
 ## Why a single direction can work
