@@ -1,0 +1,8 @@
+numpy
+scikit-learn
+matplotlib
+# Only needed for --mode real (GPT-2 hidden states):
+torch
+transformers
+# Only needed for matlab_version/extract_hidden_states.py:
+scipy

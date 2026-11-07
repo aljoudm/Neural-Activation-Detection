@@ -1,0 +1,30 @@
+# Python caches
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.venv/
+venv/
+.pytest_cache/
+
+# Hugging Face / model weights and caches
+.cache/
+huggingface/
+*.bin
+*.safetensors
+*.ckpt
+*.pt
+*.pth
+
+# Large cached hidden states
+*.npy
+*.npz
+*.mat
+
+# Secrets (never commit)
+.env
+*.key
+*.pem
+
+# OS
+.DS_Store
+Thumbs.db
