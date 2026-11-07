@@ -140,7 +140,7 @@ zlab = "z-scored" if args.zscore else "raw"
 # PCA of the hidden states used by the probe (same feature space as d); d expressed in PC coordinates
 Hl = H_all[:, :, args.layer]
 Xp = (Hl - R["mu"]) / R["sd"]
-pca = PCA(n_components=2).fit(Xp)
+pca = PCA(n_components=2, svd_solver="full").fit(Xp)   # exact solver -> reproducible figures
 Z2 = pca.transform(Xp)
 d2 = pca.components_ @ R["d"]                            # d projected into the PCA plane
 
