@@ -231,49 +231,69 @@ def pipeline_figure(path_base, n_show=30):
         arrow(330, 140, 472, 140); arrow(330, 327, 472, 327)
 
         box(475, 118, 690, 338, "white", ls=(0, (4, 3)), r=22)           # observer LLM (dashed)
-        for k in range(4):
+        for k in range(4):                                 # 4 stacked layers; ONE (k = 2) is the layer read
             y0 = 133 + 50 * k
-            ax.add_patch(plt.Rectangle((495, y0), 173, 35, fc="#EBEBEB", ec="k", lw=1.3, zorder=2))
-        ax.text(582, 88, "Observer LLM", ha="center", va="center", fontsize=23)
-        ax.text(582, 372, "stacked layers", ha="center", va="center", fontsize=23)
-        arrow(690, 225, 808, 225)
-        ax.text(748, 205, r"$\mathbf{h}$", ha="center", va="center", fontsize=23)
+            ax.add_patch(plt.Rectangle((495, y0), 173, 35, fc="#FFD9A0" if k == 2 else "#EBEBEB",
+                                       ec="k", lw=1.3, zorder=2))
+        llm = "GPT-2" if args.model == "gpt2" else args.model
+        ax.text(582, 88, f"Observer LLM ({llm})", ha="center", va="center", fontsize=23)
+        ax.text(582, 372, r"one layer $\ell$ read", ha="center", va="center", fontsize=23)
 
-        box(812, 85, 1140, 366, "white", r=18)                              # hidden-representation space
-        ax.text(976, 47, "Hidden-representation space", ha="center", va="center", fontsize=23)
-        arrow(1142, 225, 1245, 225)
+        DX = 36                                            # extra gap so the longer "h (mean-pooled)" label fits
+        arrow(690, 225, 808 + DX, 225)
+        ax.text(749 + DX / 2, 176, r"$\mathbf{h}$", ha="center", va="center", fontsize=23)
+        ax.text(749 + DX / 2, 202, "(mean-pooled)", ha="center", va="center", fontsize=15)
 
-        box(1250, 168, 1510, 285, "#FFFFDD", "Projection\nscore $s = \\mathbf{h}^{\\top}\\mathbf{d}$", fs=25)
-        arrow(1380, 287, 1380, 362)
-        box(1250, 365, 1510, 485, "#E6FFE6", "$s > \\tau$ ?\nAI : Human", fs=27)
+        box(812 + DX, 85, 1140 + DX, 366, "white", r=18)                    # 2-D PCA of the hidden states
+        ax.text(976 + DX, 47, "2-D PCA of hidden states", ha="center", va="center", fontsize=23)
+        arrow(1142 + DX, 225, 1245 + DX, 225)
+
+        box(1250 + DX, 168, 1510 + DX, 285, "#FFFFDD", "Projection\nscore $s = \\mathbf{h}^{\\top}\\mathbf{d}$", fs=25)
+        arrow(1380 + DX, 287, 1380 + DX, 362)
+        box(1250 + DX, 365, 1510 + DX, 485, "#E6FFE6", "$s > \\tau$ ?\nAI : Human", fs=27)
 
         # --- actual data inside the hidden-space box
         r_ = np.random.default_rng(args.seed + 1)
         sel = np.concatenate([r_.choice(np.where(y == c)[0], min(n_show, (y == c).sum()), replace=False)
                               for c in (0, 1)])
         P, ys = Z2[sel], y[sel]
-        x0, y0, x1, y1 = 822, 95, 1130, 356
+        x0, y0, x1, y1 = 822 + DX, 95, 1130 + DX, 356
         iax = fig.add_axes([x0 / W, 1 - y1 / Hh, (x1 - x0) / W, (y1 - y0) / Hh], facecolor="none")
         iax.scatter(*P[ys == 0].T, s=55, c="#6464F0", zorder=3, lw=0)
         iax.scatter(*P[ys == 1].T, s=55, c="#F04646", zorder=3, lw=0)
+        # d = (mu_AI - mu_Human)/||.|| is linear, so in the PCA plane it points from the projected
+        # Human centroid to the projected AI centroid: draw it exactly there (start in the blue
+        # cluster, tip in the red cluster). Length is for display only; direction is exact.
+        c_h, c_a = Z2[y == 0].mean(0), Z2[y == 1].mean(0)
         u = d2 / max(np.linalg.norm(d2), 1e-12)
         # equal x/y scale (so the direction of d is not distorted), limits fitted to the box shape
-        hx = 1.18 * np.abs(P[:, 0]).max()
+        hx = 1.18 * max(np.abs(P[:, 0]).max(), np.abs(c_h[0]), np.abs(c_a[0]))
         hy = hx * (y1 - y0) / (x1 - x0)
         hy = max(hy, 1.18 * np.abs(P[:, 1]).max()); hx = hy * (x1 - x0) / (y1 - y0)
-        L_ = 0.80 * min(hx / max(abs(u[0]), 1e-9), hy / max(abs(u[1]), 1e-9))   # arrow half-length
-        iax.annotate("", xy=u * L_, xytext=-u * L_, zorder=4,
-                     arrowprops=dict(arrowstyle="-|>", lw=2.4, color="k", mutation_scale=22, shrinkA=0, shrinkB=0))
-        nrm = np.array([-u[1], u[0]])                     # label: just past the tip, nudged to one side
-        iax.text(*(u * L_ * 1.07 + 0.09 * hy * nrm), r"$\mathbf{d}$", fontsize=24, ha="center", va="center", zorder=5)
+        iax.annotate("", xy=c_a, xytext=c_h, zorder=4,
+                     arrowprops=dict(arrowstyle="-|>", lw=2.6, color="k", mutation_scale=24, shrinkA=0, shrinkB=0))
+        # label "d": among positions on a ring around the arrow tip, pick the one farthest from all
+        # plotted points and from the arrow shaft, so the label never sits on data
+        best, best_clear = None, -1.0
+        for rad in (0.18, 0.24, 0.30):
+            for ang in np.linspace(0, 2 * np.pi, 48, endpoint=False):
+                cand = c_a + rad * hy * np.array([np.cos(ang), np.sin(ang)])
+                if abs(cand[0]) > 0.9 * hx or abs(cand[1]) > 0.9 * hy:
+                    continue
+                t = np.clip(np.dot(cand - c_h, c_a - c_h) / np.dot(c_a - c_h, c_a - c_h), 0, 1)
+                shaft = np.linalg.norm(cand - (c_h + t * (c_a - c_h)))
+                clear = min(np.linalg.norm(P - cand, axis=1).min(), shaft)
+                if clear > best_clear:
+                    best, best_clear = cand, clear
+        iax.text(*best, r"$\mathbf{d}$", fontsize=26, ha="center", va="center", zorder=5)
         iax.set_xlim(-hx, hx); iax.set_ylim(-hy, hy)
         iax.set_xticks([]); iax.set_yticks([])
         for sp in iax.spines.values():
             sp.set_visible(False)
 
         if SIM:
-            ax.text(976, 400, "simulated data (synthetic mode)", ha="center", va="center",
-                    fontsize=19, style="italic", color="#b00020")
+            ax.text(976 + DX, 408, "simulated hidden states\n(illustrative, not experimental)", ha="center",
+                    va="center", fontsize=17, style="italic", color="#b00020", linespacing=1.3)
         for ext_ in ("png", "pdf"):
             fig.savefig(f"{path_base}.{ext_}", dpi=300, facecolor="white")
         plt.close(fig)
